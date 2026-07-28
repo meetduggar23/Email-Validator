@@ -1,0 +1,32 @@
+node_modules/
+dist/
+build/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Server data (SQLite DB with user data)
+server/data/
+server/data/*.db
+server/data/*.db-shm
+server/data/*.db-wal
+
+# Uploads & reports
+server/uploads/
+server/reports/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
