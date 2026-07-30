@@ -2,7 +2,7 @@
   "name": "ai-email-validator",
   "private": true,
   "version": "1.0.0",
-  "description": "AI Email Validator - Validate email addresses instantly",
+  "description": "Email Validator - Validate email addresses instantly",
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:client": "cd client && npm run dev",

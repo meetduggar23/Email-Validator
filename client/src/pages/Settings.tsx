@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
-  Palette, Bell, Download, Globe, User, Trash2, Shield,
+  Palette, Bell, Download, Globe, User, Trash2, AlertTriangle,
   Moon, Sun, Monitor,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -170,7 +170,7 @@ export default function Settings() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
         <Card className="border-danger-200 dark:border-danger-800">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-danger-500"><Shield className="w-5 h-5" /> Danger Zone</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-danger-500"><AlertTriangle className="w-5 h-5" /> Danger Zone</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between p-4 rounded-xl bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800">

@@ -11,6 +11,9 @@ import historyRoutes from './routes/history'
 import reportRoutes from './routes/reports'
 import statsRoutes from './routes/stats'
 import settingsRoutes from './routes/settings'
+import favoritesRoutes from './routes/favorites'
+import collectionsRoutes from './routes/collections'
+import shareRoutes from './routes/share'
 import { errorHandler } from './middleware/errorHandler'
 
 const app = express()
@@ -40,9 +43,12 @@ app.use('/api/history', historyRoutes)
 app.use('/api/reports', reportRoutes)
 app.use('/api/stats', statsRoutes)
 app.use('/api/settings', settingsRoutes)
+app.use('/api/favorites', favoritesRoutes)
+app.use('/api/collections', collectionsRoutes)
+app.use('/api/share', shareRoutes)
 
 app.get('/api/health', (_req, res) => {
-  res.json({ success: true, message: 'AI Email Validator API is running' })
+  res.json({ success: true, message: 'Email Validator API is running' })
 })
 
 app.use(errorHandler)

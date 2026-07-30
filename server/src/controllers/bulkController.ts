@@ -4,7 +4,7 @@ import { getDb } from '../database'
 import { validateBulk } from '../services/emailValidationService'
 import { AuthRequest } from '../middleware/auth'
 
-export function uploadBulk(req: Request, res: Response): void {
+export async function uploadBulk(req: Request, res: Response): Promise<void> {
   try {
     const file = req.file
     if (!file) {
@@ -32,7 +32,7 @@ export function uploadBulk(req: Request, res: Response): void {
       VALUES (?, ?, ?, ?, 'processing')
     `).run(jobId, authReq.userId || null, file.originalname, emails.length)
 
-    const results = validateBulk(emails)
+    const results = await validateBulk(emails)
     let validCount = 0
     let invalidCount = 0
     let disposableCount = 0
@@ -115,11 +115,10 @@ export function uploadBulk(req: Request, res: Response): void {
 
 export function getBulkJobs(req: Request, res: Response): void {
   try {
-    const authReq = req as AuthRequest
     const db = getDb()
     const jobs = db.prepare(`
-      SELECT * FROM bulk_jobs WHERE user_id = ? ORDER BY created_at DESC LIMIT 50
-    `).all(authReq.userId || '') as any[]
+      SELECT * FROM bulk_jobs ORDER BY created_at DESC LIMIT 50
+    `).all() as any[]
 
     res.json({
       success: true,

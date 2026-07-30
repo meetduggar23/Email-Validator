@@ -1,11 +1,12 @@
 import { Router } from 'express'
-import { exportCSV, exportJSON, getReportSummary } from '../controllers/reportsController'
-import { authenticateToken } from '../middleware/auth'
+import { exportCSV, exportJSON, exportExcel, exportPDF, getReportSummary } from '../controllers/reportsController'
 
 const router = Router()
 
-router.get('/csv', authenticateToken, exportCSV)
-router.get('/json', authenticateToken, exportJSON)
-router.get('/summary', authenticateToken, getReportSummary)
+router.get('/csv', exportCSV)
+router.get('/json', exportJSON)
+router.get('/excel', exportExcel)
+router.get('/pdf', exportPDF)
+router.get('/summary', getReportSummary)
 
 export default router

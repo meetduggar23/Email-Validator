@@ -22,6 +22,8 @@ function createTables(): void {
       notifications INTEGER DEFAULT 1,
       export_format TEXT DEFAULT 'csv',
       api_source TEXT DEFAULT 'public',
+      language TEXT DEFAULT 'en',
+      timezone TEXT DEFAULT 'UTC',
       created_at TEXT DEFAULT (datetime('now'))
     );
 
@@ -37,11 +39,53 @@ function createTables(): void {
       provider TEXT,
       deliverability TEXT DEFAULT 'unknown',
       confidence_score REAL DEFAULT 0,
+      health_score INTEGER DEFAULT 0,
+      explanation TEXT DEFAULT '',
       suggestions TEXT DEFAULT '[]',
       typo_suggestions TEXT DEFAULT '[]',
       result_json TEXT,
       created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS favorites (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      validation_id TEXT,
+      email TEXT NOT NULL,
+      label TEXT DEFAULT '',
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (validation_id) REFERENCES validations(id) ON DELETE SET NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS collections (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      color TEXT DEFAULT '#4F46E5',
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS collection_items (
+      id TEXT PRIMARY KEY,
+      collection_id TEXT NOT NULL,
+      validation_id TEXT,
+      email TEXT NOT NULL,
+      added_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE,
+      FOREIGN KEY (validation_id) REFERENCES validations(id) ON DELETE SET NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS share_tokens (
+      id TEXT PRIMARY KEY,
+      validation_id TEXT NOT NULL,
+      token TEXT UNIQUE NOT NULL,
+      created_at TEXT DEFAULT (datetime('now')),
+      expires_at TEXT,
+      FOREIGN KEY (validation_id) REFERENCES validations(id) ON DELETE CASCADE
     );
 
     CREATE TABLE IF NOT EXISTS bulk_jobs (
@@ -82,8 +126,12 @@ function createTables(): void {
     CREATE INDEX IF NOT EXISTS idx_validations_email ON validations(email);
     CREATE INDEX IF NOT EXISTS idx_validations_user ON validations(user_id);
     CREATE INDEX IF NOT EXISTS idx_validations_created ON validations(created_at);
+    CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites(user_id);
+    CREATE INDEX IF NOT EXISTS idx_collections_user ON collections(user_id);
+    CREATE INDEX IF NOT EXISTS idx_collection_items_collection ON collection_items(collection_id);
     CREATE INDEX IF NOT EXISTS idx_bulk_jobs_user ON bulk_jobs(user_id);
     CREATE INDEX IF NOT EXISTS idx_bulk_results_job ON bulk_results(job_id);
+    CREATE INDEX IF NOT EXISTS idx_share_tokens_token ON share_tokens(token);
   `)
 }
 

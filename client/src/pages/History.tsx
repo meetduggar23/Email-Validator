@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Search, Trash2, Download, Filter, ChevronLeft, ChevronRight,
+  Search, Trash2, Download, ChevronLeft, ChevronRight,
   Clock, Mail, Check, X, AlertTriangle,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -24,6 +24,7 @@ export default function History() {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
   const [provider, setProvider] = useState('')
+  const [searchInput, setSearchInput] = useState('')
 
   const loadHistory = () => {
     setIsLoading(true)
@@ -39,7 +40,19 @@ export default function History() {
 
   useEffect(() => { loadHistory() }, [page, status, provider])
 
-  const handleSearch = () => { setPage(1); loadHistory() }
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput !== search) {
+        setSearch(searchInput)
+        setPage(1)
+      }
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [searchInput])
+
+  useEffect(() => {
+    if (search) loadHistory()
+  }, [search])
 
   const handleDelete = async (id: string) => {
     await api.history.delete(id)
@@ -78,7 +91,6 @@ export default function History() {
         )}
       </div>
 
-      {/* Filters */}
       <Card>
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-3">
@@ -87,28 +99,27 @@ export default function History() {
               <Input
                 placeholder="Search emails..."
                 className="pl-10"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                value={searchInput}
+                onChange={e => setSearchInput(e.target.value)}
               />
             </div>
-            <Select value={status} onValueChange={setStatus}>
+            <Select value={status} onValueChange={v => { setStatus(v === 'all' ? '' : v); setPage(1) }}>
               <SelectTrigger className="w-full sm:w-[140px]">
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="valid">Valid</SelectItem>
                 <SelectItem value="invalid">Invalid</SelectItem>
                 <SelectItem value="disposable">Disposable</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={provider} onValueChange={setProvider}>
+            <Select value={provider} onValueChange={v => { setProvider(v === 'all' ? '' : v); setPage(1) }}>
               <SelectTrigger className="w-full sm:w-[160px]">
                 <SelectValue placeholder="All Providers" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Providers</SelectItem>
+                <SelectItem value="all">All Providers</SelectItem>
                 <SelectItem value="Google Gmail">Gmail</SelectItem>
                 <SelectItem value="Yahoo Mail">Yahoo</SelectItem>
                 <SelectItem value="Microsoft Outlook">Outlook</SelectItem>
@@ -119,7 +130,6 @@ export default function History() {
         </CardContent>
       </Card>
 
-      {/* List */}
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
@@ -175,7 +185,6 @@ export default function History() {
         </CardContent>
       </Card>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">Page {page} of {totalPages}</p>

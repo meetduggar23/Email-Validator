@@ -11,6 +11,9 @@ import BulkValidate from '@/pages/BulkValidate'
 import Reports from '@/pages/Reports'
 import History from '@/pages/History'
 import Settings from '@/pages/Settings'
+import Favorites from '@/pages/Favorites'
+import Collections from '@/pages/Collections'
+import ApiPlayground from '@/pages/ApiPlayground'
 
 const queryClient = new QueryClient()
 
@@ -36,6 +39,15 @@ function App() {
               </Route>
               <Route path="/history" element={<DashboardLayout />}>
                 <Route index element={<History />} />
+              </Route>
+              <Route path="/favorites" element={<DashboardLayout />}>
+                <Route index element={<Favorites />} />
+              </Route>
+              <Route path="/collections" element={<DashboardLayout />}>
+                <Route index element={<Collections />} />
+              </Route>
+              <Route path="/api-playground" element={<DashboardLayout />}>
+                <Route index element={<ApiPlayground />} />
               </Route>
               <Route path="/settings" element={<DashboardLayout />}>
                 <Route index element={<Settings />} />

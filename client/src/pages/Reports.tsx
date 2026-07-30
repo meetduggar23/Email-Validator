@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { FileDown, FileSpreadsheet, FileJson, FileText, BarChart3, Download } from 'lucide-react'
+import { FileDown, FileSpreadsheet, FileJson, BarChart3 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { api } from '@/services/api'
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 const COLORS = ['#10B981', '#EF4444', '#F59E0B', '#8B5CF6', '#6B7280']
 
@@ -30,17 +30,12 @@ export default function Reports() {
 
   const downloads = [
     { label: 'CSV', icon: FileSpreadsheet, url: api.reports.csv(), desc: 'Comma separated values' },
-    { label: 'Excel', icon: FileText, url: '#', desc: 'Excel spreadsheet', disabled: true },
-    { label: 'PDF', icon: FileText, url: '#', desc: 'PDF document', disabled: true },
     { label: 'JSON', icon: FileJson, url: api.reports.json(), desc: 'JSON format' },
   ]
 
   const handleDownload = async (url: string, format: string) => {
-    const token = localStorage.getItem('token')
     try {
-      const response = await fetch(url, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      })
+      const response = await fetch(url)
       const blob = await response.blob()
       const a = document.createElement('a')
       a.href = URL.createObjectURL(blob)
@@ -56,10 +51,9 @@ export default function Reports() {
     <div className="space-y-8 animate-in">
       <div>
         <h1 className="text-3xl font-bold">Reports</h1>
-        <p className="text-muted-foreground mt-1">Generate and download email validation reports</p>
+        <p className="text-muted-foreground mt-1">Generate and download email validation reports from your real data</p>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {isLoading ? (
           Array(6).fill(0).map((_, i) => (
@@ -84,7 +78,6 @@ export default function Reports() {
         )}
       </div>
 
-      {/* Chart Section */}
       <div className="grid lg:grid-cols-2 gap-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <Card>
@@ -136,20 +129,18 @@ export default function Reports() {
         </motion.div>
       </div>
 
-      {/* Download Options */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Download className="w-5 h-5" /> Export Report</CardTitle>
+            <CardTitle className="flex items-center gap-2"><FileDown className="w-5 h-5" /> Export Report</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid sm:grid-cols-2 gap-4">
               {downloads.map((item) => (
                 <button
                   key={item.label}
-                  onClick={() => !item.disabled && handleDownload(item.url, item.label.toLowerCase())}
-                  disabled={item.disabled}
-                  className={`flex flex-col items-center gap-3 p-6 rounded-2xl border border-border bg-card hover:bg-accent hover:border-primary-500/30 transition-all duration-200 ${item.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  onClick={() => handleDownload(item.url, item.label.toLowerCase())}
+                  className="flex flex-col items-center gap-3 p-6 rounded-2xl border border-border bg-card hover:bg-accent hover:border-primary-500/30 transition-all duration-200 cursor-pointer"
                 >
                   <div className="w-14 h-14 rounded-2xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
                     <item.icon className="w-7 h-7 text-primary-600 dark:text-primary-400" />
@@ -158,7 +149,6 @@ export default function Reports() {
                     <p className="font-semibold">{item.label}</p>
                     <p className="text-xs text-muted-foreground mt-1">{item.desc}</p>
                   </div>
-                  {item.disabled && <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Coming soon</span>}
                 </button>
               ))}
             </div>

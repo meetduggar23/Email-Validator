@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Shield, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -55,11 +55,9 @@ export default function Login() {
       >
         <div className="bg-card rounded-3xl border border-border shadow-2xl p-8">
           <div className="text-center mb-8">
-            <Link to="/" className="inline-flex items-center gap-2 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-primary-500 flex items-center justify-center">
-                <Shield className="w-5 h-5 text-white" />
-              </div>
-            </Link>
+            <div className="mb-6">
+              <span className="font-bold text-xl">AI Email Validator</span>
+            </div>
             <h1 className="text-2xl font-bold">Welcome back</h1>
             <p className="text-muted-foreground text-sm mt-1">Sign in to your account</p>
           </div>

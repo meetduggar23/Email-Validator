@@ -1,12 +1,17 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import EmailValidationCard from '@/components/EmailValidationCard'
 import { motion } from 'framer-motion'
 import {
   Shield, Check, ChevronDown, Menu, X, Mail, Globe,
   Search, BarChart3, Download, Upload, Clock, Zap,
-  Layers, Terminal, Users, Star, ArrowUpRight,
+  Terminal, Users, Star, ArrowUpRight, RefreshCw,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
+import { api } from '@/services/api'
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 'recharts'
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 24 },
@@ -24,17 +29,18 @@ const stagger = {
 
 const NAV_LINKS = [
   { label: 'Features', href: '#features' },
+  { label: 'How It Works', href: '#how-it-works' },
 ]
 
 export default function Landing() {
   const [mobileMenu, setMobileMenu] = useState(false)
   const [faqOpen, setFaqOpen] = useState<number | null>(null)
-  const [demoEmail, setDemoEmail] = useState('')
-  const [demoResult, setDemoResult] = useState(false)
-
-  const runDemo = () => {
-    if (demoEmail.includes('@')) setDemoResult(true)
-  }
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ['landing-stats'],
+    queryFn: () => api.stats.dashboard().then(r => r.data),
+    refetchInterval: 30000,
+    staleTime: 10000,
+  })
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] font-sans text-[#111827] overflow-x-hidden">
@@ -42,11 +48,8 @@ export default function Landing() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-[#FAFAFA]/95 backdrop-blur-md border-b border-[#E5E7EB]/50">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link to="/" className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#4F46E5] flex items-center justify-center">
-                <Shield className="w-4 h-4 text-white" />
-              </div>
-              <span className="font-semibold text-lg tracking-tight">EmailValidator</span>
+            <Link to="/" className="flex items-center">
+              <span className="font-semibold text-lg tracking-tight">Email Validator</span>
             </Link>
 
             <nav className="hidden lg:flex items-center gap-8">
@@ -58,9 +61,7 @@ export default function Landing() {
             </nav>
 
             <div className="hidden lg:flex items-center gap-3">
-              <Link to="/dashboard">
-                <Button size="sm" className="bg-[#4F46E5] hover:bg-[#4338CA] text-white shadow-sm">Start Free</Button>
-              </Link>
+              <Link to="/dashboard"><Button size="sm" className="bg-[#4F46E5] hover:bg-[#4338CA] text-white shadow-sm">Dashboard</Button></Link>
             </div>
 
             <button onClick={() => setMobileMenu(!mobileMenu)} className="lg:hidden p-2 text-[#6B7280] hover:text-[#111827]">
@@ -75,7 +76,7 @@ export default function Landing() {
               <a key={link.label} href={link.href} onClick={() => setMobileMenu(false)} className="block text-sm text-[#6B7280] hover:text-[#111827] py-2">{link.label}</a>
             ))}
             <div className="pt-2">
-              <Link to="/dashboard" onClick={() => setMobileMenu(false)}><Button size="sm" className="bg-[#4F46E5] hover:bg-[#4338CA] text-white w-full">Start Free</Button></Link>
+              <Link to="/dashboard" onClick={() => setMobileMenu(false)}><Button size="sm" className="bg-[#4F46E5] hover:bg-[#4338CA] text-white w-full">Dashboard</Button></Link>
             </div>
           </motion.div>
         )}
@@ -89,14 +90,14 @@ export default function Landing() {
             <motion.div initial={{ opacity: 0, y: 32 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}>
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#4F46E5]/5 border border-[#4F46E5]/10 mb-6">
                 <div className="w-1.5 h-1.5 rounded-full bg-[#4F46E5] animate-pulse" />
-                <span className="text-xs font-medium text-[#4F46E5] tracking-wide uppercase">Email Validation API</span>
+                <span className="text-xs font-medium text-[#4F46E5] tracking-wide uppercase">Dashboard </span>
               </div>
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.08] text-[#111827]">
                 Validate Every Email{' '}
                 <span className="text-[#4F46E5]">Before You Send It</span>
               </h1>
               <p className="mt-6 text-lg text-[#6B7280] leading-relaxed max-w-lg">
-                Check syntax, domain, MX records, and disposable emails in real time. 
+                Check syntax, domain, MX records, and disposable emails in real time.
                 Our engine validates thousands of addresses per minute with 99.9% accuracy.
               </p>
               <div className="flex flex-wrap gap-4 mt-8">
@@ -139,44 +140,76 @@ export default function Landing() {
                   <Terminal className="w-4 h-4 text-white/30" />
                 </div>
 
-                <div className="space-y-4">
-                  <div className="text-sm text-white/50 font-medium">Validate an Email</div>
-                  <div className="flex gap-2">
-                    <input
-                      type="email"
-                      value={demoEmail}
-                      onChange={e => { setDemoEmail(e.target.value); setDemoResult(false) }}
-                      onKeyDown={e => e.key === 'Enter' && runDemo()}
-                      placeholder="name@example.com"
-                      className="flex-1 h-11 bg-white/5 border border-white/10 rounded-xl px-4 text-sm text-white placeholder:text-white/30 outline-none focus:border-[#4F46E5]/50 transition-colors"
-                    />
-                    <button
-                      onClick={runDemo}
-                      className="px-5 h-11 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-sm font-medium rounded-xl transition-all duration-200 active:scale-[0.98]"
-                    >
-                      Validate
-                    </button>
-                  </div>
-
-                  {demoResult && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-2.5 pt-2">
-                      <ValidationRow label="Syntax" status="valid" delay={0} />
-                      <ValidationRow label="Domain" status="valid" delay={0.1} />
-                      <ValidationRow label="MX Records" status="valid" delay={0.2} />
-                      <ValidationRow label="Disposable" status="valid" delay={0.3} />
-                      <ValidationRow label="Deliverability 98%" status="valid" delay={0.4} />
-                    </motion.div>
-                  )}
-
-                  {!demoResult && (
-                    <div className="py-6 text-center text-white/20 text-sm">
-                      Enter an email and click Validate
-                    </div>
-                  )}
-                </div>
+                <div className="text-sm text-white/50 font-medium mb-4">Test an email address</div>
+                <EmailValidationCard variant="landing" />
               </motion.div>
             </motion.div>
           </div>
+        </div>
+      </section>
+
+      {/* ===== DASHBOARD PREVIEW ===== */}
+      <section className="py-24 lg:py-32 px-6 lg:px-8 bg-white border-y border-[#E5E7EB]">
+        <div className="max-w-7xl mx-auto">
+          <motion.div {...fadeUp()} className="text-center max-w-2xl mx-auto mb-14">
+            <span className="text-xs font-medium text-[#4F46E5] tracking-widest uppercase">Dashboard</span>
+            <h2 className="text-3xl sm:text-4xl font-bold mt-3 tracking-tight">Beautiful analytics at a glance</h2>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="bg-white rounded-3xl border border-[#E5E7EB] shadow-xl shadow-black/5 overflow-hidden"
+          >
+            <div className="flex items-center gap-2 px-6 py-4 border-b border-[#E5E7EB] bg-[#FAFAFA]">
+              <div className="flex gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-[#EF4444]/60" />
+                <div className="w-3 h-3 rounded-full bg-[#F59E0B]/60" />
+                <div className="w-3 h-3 rounded-full bg-[#10B981]/60" />
+              </div>
+              <span className="text-xs text-[#6B7280] font-mono ml-3">dashboard</span>
+            </div>
+            <div className="p-6 sm:p-8">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+                {[
+                  { label: 'Total Validated', value: stats?.totalEmailsChecked ?? '—' },
+                  { label: 'Valid', value: stats?.validEmails ?? '—' },
+                  { label: 'Invalid', value: stats?.invalidEmails ?? '—' },
+                  { label: 'Disposable', value: stats?.disposableEmails ?? '—' },
+                  { label: 'Deliverability', value: stats?.deliverabilityRate != null ? `${stats.deliverabilityRate}%` : '—' },
+                  { label: 'MX Success', value: stats?.mxSuccess != null ? `${stats.mxSuccess}%` : '—' },
+                ].map(stat => (
+                  <div key={stat.label} className="bg-[#FAFAFA] rounded-xl p-4 border border-[#E5E7EB]">
+                    <div className="text-xs text-[#6B7280] font-medium">{stat.label}</div>
+                    <div className="text-xl font-bold text-[#111827] mt-1">
+                      {statsLoading ? <Skeleton className="h-7 w-16" /> : stat.value}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="h-48 rounded-xl bg-[#F9F9FB] border border-[#E5E7EB] p-4">
+                {statsLoading ? (
+                  <Skeleton className="h-full w-full rounded-lg" />
+                ) : stats?.dailyStats?.length ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={stats.dailyStats}>
+                      <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} />
+                      <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #E5E7EB' }} />
+                      <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                        {stats.dailyStats.map((_: any, i: number) => (
+                          <Cell key={i} fill="#4F46E5" fillOpacity={0.6 + (i / stats.dailyStats.length) * 0.4} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-[#D1D5DB] text-sm">No data yet</div>
+                )}
+              </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 
@@ -243,7 +276,7 @@ export default function Landing() {
       </section>
 
       {/* ===== HOW IT WORKS ===== */}
-      <section className="py-24 lg:py-32 px-6 lg:px-8 bg-white border-y border-[#E5E7EB]">
+      <section id="how-it-works" className="py-24 lg:py-32 px-6 lg:px-8 bg-white border-y border-[#E5E7EB]">
         <div className="max-w-7xl mx-auto">
           <motion.div {...fadeUp()} className="text-center max-w-2xl mx-auto">
             <span className="text-xs font-medium text-[#4F46E5] tracking-widest uppercase">How It Works</span>
@@ -273,94 +306,6 @@ export default function Landing() {
                 <p className="mt-2 text-sm text-[#6B7280] leading-relaxed max-w-xs mx-auto">{item.desc}</p>
               </motion.div>
             ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ===== VALIDATION PROCESS TIMELINE ===== */}
-      <section className="py-24 lg:py-32 px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
-          <motion.div {...fadeUp()} className="text-center max-w-2xl mx-auto mb-16">
-            <span className="text-xs font-medium text-[#4F46E5] tracking-widest uppercase">Validation Process</span>
-            <h2 className="text-3xl sm:text-4xl font-bold mt-3 tracking-tight">What happens when you validate</h2>
-          </motion.div>
-
-          <div className="space-y-6">
-            {[
-              { step: '1', title: 'Syntax Check', desc: 'We verify the email format meets RFC 5322 standards, checking local part length, domain format, and special characters.', time: '< 1ms' },
-              { step: '2', title: 'Domain Verification', desc: 'DNS lookup confirms the domain exists and has valid name server records.', time: '< 50ms' },
-              { step: '3', title: 'MX Record Lookup', desc: 'We check for Mail Exchange records to confirm the domain can receive emails.', time: '< 100ms' },
-              { step: '4', title: 'Disposable Detection', desc: 'Cross-reference against our database of 10,000+ known disposable email domains.', time: '< 5ms' },
-              { step: '5', title: 'Provider Identification', desc: 'Identify the email provider and determine deliverability confidence.', time: '< 10ms' },
-              { step: '6', title: 'Report Generation', desc: 'Compile all checks into a detailed report with confidence scoring and suggestions.', time: '< 5ms' },
-            ].map((item, i) => (
-              <motion.div
-                key={item.step}
-                initial={{ opacity: 0, x: -16 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: i * 0.08 }}
-                className="flex items-start gap-5 p-5 rounded-2xl bg-white border border-[#E5E7EB] hover:border-[#4F46E5]/20 transition-colors"
-              >
-                <div className="w-10 h-10 rounded-xl bg-[#4F46E5]/5 flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-sm font-bold text-[#4F46E5]">{item.step}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-4">
-                    <h3 className="font-semibold text-[#111827]">{item.title}</h3>
-                    <span className="text-xs text-[#10B981] font-mono shrink-0">{item.time}</span>
-                  </div>
-                  <p className="mt-1 text-sm text-[#6B7280] leading-relaxed">{item.desc}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ===== DASHBOARD PREVIEW ===== */}
-      <section className="py-24 lg:py-32 px-6 lg:px-8 bg-white border-y border-[#E5E7EB]">
-        <div className="max-w-7xl mx-auto">
-          <motion.div {...fadeUp()} className="text-center max-w-2xl mx-auto mb-14">
-            <span className="text-xs font-medium text-[#4F46E5] tracking-widest uppercase">Dashboard</span>
-            <h2 className="text-3xl sm:text-4xl font-bold mt-3 tracking-tight">Beautiful analytics at a glance</h2>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="bg-white rounded-3xl border border-[#E5E7EB] shadow-xl shadow-black/5 overflow-hidden"
-          >
-            <div className="flex items-center gap-2 px-6 py-4 border-b border-[#E5E7EB] bg-[#FAFAFA]">
-              <div className="flex gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-[#EF4444]/60" />
-                <div className="w-3 h-3 rounded-full bg-[#F59E0B]/60" />
-                <div className="w-3 h-3 rounded-full bg-[#10B981]/60" />
-              </div>
-              <span className="text-xs text-[#6B7280] font-mono ml-3">dashboard</span>
-            </div>
-            <div className="p-6 sm:p-8">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-                {[
-                  { label: 'Total Validated', value: '12,847' },
-                  { label: 'Valid', value: '11,234' },
-                  { label: 'Invalid', value: '1,023' },
-                  { label: 'Disposable', value: '590' },
-                  { label: 'Deliverability', value: '87.4%' },
-                  { label: 'MX Success', value: '94.2%' },
-                ].map(stat => (
-                  <div key={stat.label} className="bg-[#FAFAFA] rounded-xl p-4 border border-[#E5E7EB]">
-                    <div className="text-xs text-[#6B7280] font-medium">{stat.label}</div>
-                    <div className="text-xl font-bold text-[#111827] mt-1">{stat.value}</div>
-                  </div>
-                ))}
-              </div>
-              <div className="h-48 rounded-xl bg-[#F9F9FB] border border-[#E5E7EB] flex items-center justify-center">
-                <Layers className="w-8 h-8 text-[#D1D5DB]" />
-              </div>
-            </div>
           </motion.div>
         </div>
       </section>
@@ -404,7 +349,7 @@ export default function Landing() {
               { q: 'Is my data secure?', a: 'Yes. All email data is encrypted in transit and at rest. We never share or sell your data. You can delete your data at any time.' },
               { q: 'Can I validate bulk emails?', a: 'Absolutely. Upload a CSV file with your email list and we will validate them all at once. Download the results in your preferred format.' },
               { q: 'What email providers are supported?', a: 'We support all major providers including Gmail, Yahoo, Outlook, iCloud, ProtonMail, and thousands of custom domains.' },
-              { q: 'Is there a limit on validations?', a: 'No. Our free plan includes unlimited email validations with no daily or monthly caps.' },
+              { q: 'Is there a limit on validations?', a: 'No. Our Free plan includes unlimited email validations with no daily or monthly caps.' },
             ].map((faq, i) => (
               <motion.div
                 key={i}
@@ -458,11 +403,8 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto">
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10">
             <div className="sm:col-span-2 lg:col-span-2">
-              <Link to="/" className="flex items-center gap-2.5 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-[#4F46E5] flex items-center justify-center">
-                  <Shield className="w-4 h-4 text-white" />
-                </div>
-                <span className="font-semibold text-lg tracking-tight">EmailValidator</span>
+              <Link to="/" className="flex items-center mb-4">
+                <span className="font-semibold text-lg tracking-tight">Email Validator</span>
               </Link>
               <p className="text-sm text-[#6B7280] max-w-sm leading-relaxed">
                 Advanced email validation platform. Check syntax, domain, MX records, and deliverability instantly.
@@ -494,23 +436,3 @@ export default function Landing() {
   )
 }
 
-function ValidationRow({ label, status, delay }: { label: string; status: 'valid' | 'invalid'; delay: number }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: -8 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.3, delay }}
-      className="flex items-center gap-3 text-sm"
-    >
-      <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ duration: 0.2, delay: delay + 0.1 }}
-        className="w-5 h-5 rounded-full bg-[#10B981]/15 flex items-center justify-center"
-      >
-        <Check className="w-3 h-3 text-[#10B981]" />
-      </motion.div>
-      <span className="text-white/80">{label}</span>
-    </motion.div>
-  )
-}

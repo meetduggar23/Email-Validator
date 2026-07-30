@@ -1,10 +1,8 @@
 import { Request, Response } from 'express'
 import { getDb } from '../database'
-import { AuthRequest } from '../middleware/auth'
 
 export function getHistory(req: Request, res: Response): void {
   try {
-    const authReq = req as AuthRequest
     const db = getDb()
     const page = parseInt(req.query.page as string) || 1
     const limit = parseInt(req.query.limit as string) || 20
@@ -12,18 +10,17 @@ export function getHistory(req: Request, res: Response): void {
     const search = (req.query.search as string) || ''
     const provider = (req.query.provider as string) || ''
     const status = (req.query.status as string) || ''
+    const sortBy = (req.query.sortBy as string) || 'created_at'
+    const sortOrder = (req.query.sortOrder as string) || 'desc'
+
+    const allowedSortColumns = ['created_at', 'confidence_score', 'email', 'provider']
+    const safeSortBy = allowedSortColumns.includes(sortBy) ? sortBy : 'created_at'
+    const safeSortOrder = sortOrder === 'asc' ? 'ASC' : 'DESC'
 
     let query = 'SELECT * FROM validations WHERE 1=1'
     let countQuery = 'SELECT COUNT(*) as total FROM validations WHERE 1=1'
     const params: any[] = []
     const countParams: any[] = []
-
-    if (authReq.userId) {
-      query += ' AND user_id = ?'
-      countQuery += ' AND user_id = ?'
-      params.push(authReq.userId)
-      countParams.push(authReq.userId)
-    }
 
     if (search) {
       query += ' AND email LIKE ?'
@@ -50,7 +47,7 @@ export function getHistory(req: Request, res: Response): void {
       countQuery += ' AND is_disposable = 1'
     }
 
-    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+    query += ` ORDER BY ${safeSortBy} ${safeSortOrder} LIMIT ? OFFSET ?`
     params.push(limit, offset)
 
     const total = (db.prepare(countQuery).get(...countParams) as any).total
@@ -66,6 +63,7 @@ export function getHistory(req: Request, res: Response): void {
           isDisposable: !!v.is_disposable,
           provider: v.provider,
           confidenceScore: v.confidence_score,
+          healthScore: v.health_score || v.confidence_score,
           timestamp: v.created_at,
         })),
         total,
