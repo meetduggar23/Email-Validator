@@ -1,9 +1,13 @@
 import { Request, Response } from 'express'
 import { getDb } from '../database'
+import { AuthRequest } from '../middleware/auth'
 
 export function getHistory(req: Request, res: Response): void {
   try {
+    const authReq = req as AuthRequest
+    const userId = authReq.userId
     const db = getDb()
+    
     const page = parseInt(req.query.page as string) || 1
     const limit = parseInt(req.query.limit as string) || 20
     const offset = (page - 1) * limit
@@ -17,10 +21,10 @@ export function getHistory(req: Request, res: Response): void {
     const safeSortBy = allowedSortColumns.includes(sortBy) ? sortBy : 'created_at'
     const safeSortOrder = sortOrder === 'asc' ? 'ASC' : 'DESC'
 
-    let query = 'SELECT * FROM validations WHERE 1=1'
-    let countQuery = 'SELECT COUNT(*) as total FROM validations WHERE 1=1'
-    const params: any[] = []
-    const countParams: any[] = []
+    let query = 'SELECT * FROM validations WHERE user_id = ?'
+    let countQuery = 'SELECT COUNT(*) as total FROM validations WHERE user_id = ?'
+    const params: any[] = [userId]
+    const countParams: any[] = [userId]
 
     if (search) {
       query += ' AND email LIKE ?'
@@ -79,19 +83,23 @@ export function getHistory(req: Request, res: Response): void {
 
 export function deleteHistoryItem(req: Request, res: Response): void {
   try {
+    const authReq = req as AuthRequest
     const { id } = req.params
     const db = getDb()
-    db.prepare('DELETE FROM validations WHERE id = ?').run(id)
+    
+    db.prepare('DELETE FROM validations WHERE id = ? AND user_id = ?').run(id, authReq.userId)
     res.json({ success: true, message: 'History item deleted' })
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to delete history item' })
   }
 }
 
-export function clearHistory(_req: Request, res: Response): void {
+export function clearHistory(req: Request, res: Response): void {
   try {
+    const authReq = req as AuthRequest
     const db = getDb()
-    db.prepare('DELETE FROM validations').run()
+    
+    db.prepare('DELETE FROM validations WHERE user_id = ?').run(authReq.userId)
     res.json({ success: true, message: 'History cleared' })
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to clear history' })

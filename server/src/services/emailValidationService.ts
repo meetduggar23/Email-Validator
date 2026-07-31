@@ -161,6 +161,8 @@ type DnsResult = { status: 'ok' } | { status: 'not_found' } | { status: 'unable_
 
 async function resolveDomain(domain: string, debugLog: string[]): Promise<DnsResult> {
   log(debugLog, `DNS: Resolving A records for ${domain}...`)
+  let aNetworkError = false
+  let aErrorMsg = ''
   try {
     const records = await dns.resolve(domain, 'A')
     if (records.length > 0) {
@@ -169,9 +171,15 @@ async function resolveDomain(domain: string, debugLog: string[]): Promise<DnsRes
     }
   } catch (err: any) {
     log(debugLog, `DNS: A record lookup failed for ${domain}: code=${err.code} syscall=${err.syscall} message=${err.message}`)
+    if (err.code !== 'ENOTFOUND' && err.code !== 'ENODATA') {
+      aNetworkError = true
+      aErrorMsg = err.message
+    }
   }
 
   log(debugLog, `DNS: Trying AAAA records for ${domain}...`)
+  let aaaaNetworkError = false
+  let aaaaErrorMsg = ''
   try {
     const records = await dns.resolve(domain, 'AAAA')
     if (records.length > 0) {
@@ -180,6 +188,15 @@ async function resolveDomain(domain: string, debugLog: string[]): Promise<DnsRes
     }
   } catch (err: any) {
     log(debugLog, `DNS: AAAA record lookup failed for ${domain}: code=${err.code} syscall=${err.syscall} message=${err.message}`)
+    if (err.code !== 'ENOTFOUND' && err.code !== 'ENODATA') {
+      aaaaNetworkError = true
+      aaaaErrorMsg = err.message
+    }
+  }
+
+  if (aNetworkError || aaaaNetworkError) {
+    log(debugLog, `DNS: Network/connectivity error during resolution: ${aErrorMsg || aaaaErrorMsg}`)
+    return { status: 'unable_to_verify', reason: aErrorMsg || aaaaErrorMsg }
   }
 
   log(debugLog, `DNS: All DNS lookups failed for ${domain}`)
@@ -330,6 +347,15 @@ export async function validateEmail(email: string): Promise<ValidationResponse> 
       domainExists = true
       domainCheck = 'ok'
       log(debugLog, `RESULT: Domain ${domain} exists (A/AAAA records found)`)
+    } else if (domainResult.status === 'unable_to_verify') {
+      dnsError = true
+      if (!isTrusted) {
+        domainExists = false
+        domainCheck = 'unable_to_verify'
+        log(debugLog, `RESULT: Domain ${domain} DNS lookup encountered a network error`)
+      } else {
+        log(debugLog, `RESULT: Domain ${domain} DNS lookup failed due to network error but is trusted — keeping default`)
+      }
     } else if (domainResult.status === 'not_found') {
       if (!isTrusted) {
         log(debugLog, `RESULT: Domain ${domain} not found`)
@@ -494,9 +520,19 @@ export async function validateEmail(email: string): Promise<ValidationResponse> 
 }
 
 export async function validateBulk(emails: string[]): Promise<ValidationResponse[]> {
-  const results: ValidationResponse[] = []
-  for (const email of emails) {
-    results.push(await validateEmail(email.trim()))
+  const results: ValidationResponse[] = new Array(emails.length)
+  const concurrencyLimit = 10
+  let index = 0
+
+  async function worker() {
+    while (index < emails.length) {
+      const currentIndex = index++
+      const email = emails[currentIndex]
+      results[currentIndex] = await validateEmail(email.trim())
+    }
   }
+
+  const workers = Array.from({ length: Math.min(concurrencyLimit, emails.length) }, worker)
+  await Promise.all(workers)
   return results
 }

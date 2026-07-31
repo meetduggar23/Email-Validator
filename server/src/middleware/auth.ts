@@ -27,6 +27,24 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
   }
 }
 
+export function optionalAuthenticateToken(req: AuthRequest, res: Response, next: NextFunction): void {
+  const authHeader = req.headers['authorization']
+  const token = authHeader && authHeader.split(' ')[1]
+
+  if (!token) {
+    return next()
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string }
+    req.userId = decoded.userId
+    req.userEmail = decoded.email
+  } catch {
+    // Ignore invalid/expired token for optional endpoints
+  }
+  next()
+}
+
 export function generateToken(userId: string, email: string): string {
   return jwt.sign({ userId, email }, JWT_SECRET, { expiresIn: '7d' })
 }

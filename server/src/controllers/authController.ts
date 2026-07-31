@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { getDb } from '../database'
 import { generateToken } from '../middleware/auth'
 
-export function register(req: Request, res: Response): void {
+export async function register(req: Request, res: Response): Promise<void> {
   try {
     const { email, name, password } = req.body
     if (!email || !name || !password) {
@@ -22,7 +22,7 @@ export function register(req: Request, res: Response): void {
       return
     }
     const id = uuidv4()
-    const hashedPassword = bcrypt.hashSync(password, 10)
+    const hashedPassword = await bcrypt.hash(password, 10)
     db.prepare(
       'INSERT INTO users (id, email, name, password) VALUES (?, ?, ?, ?)'
     ).run(id, email, name, hashedPassword)
@@ -36,7 +36,7 @@ export function register(req: Request, res: Response): void {
   }
 }
 
-export function login(req: Request, res: Response): void {
+export async function login(req: Request, res: Response): Promise<void> {
   try {
     const { email, password } = req.body
     if (!email || !password) {
@@ -45,7 +45,7 @@ export function login(req: Request, res: Response): void {
     }
     const db = getDb()
     const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as any
-    if (!user || !bcrypt.compareSync(password, user.password)) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       res.status(401).json({ success: false, error: 'Invalid email or password' })
       return
     }

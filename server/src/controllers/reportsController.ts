@@ -1,12 +1,14 @@
 import { Request, Response } from 'express'
 import { getDb } from '../database'
+import { AuthRequest } from '../middleware/auth'
 import * as XLSX from 'xlsx'
 import PDFDocument from 'pdfkit'
 
 export function exportCSV(req: Request, res: Response): void {
   try {
+    const authReq = req as AuthRequest
     const db = getDb()
-    const items = db.prepare('SELECT * FROM validations ORDER BY created_at DESC LIMIT 10000').all() as any[]
+    const items = db.prepare('SELECT * FROM validations WHERE user_id = ? ORDER BY created_at DESC LIMIT 10000').all(authReq.userId) as any[]
     const headers = 'Email,Syntax Valid,Domain Valid,MX Records,Disposable,Provider,Confidence Score,Health Score,Timestamp\n'
     const rows = items.map((v: any) =>
       `"${v.email}",${v.syntax_valid},${v.domain_valid},${v.mx_valid},${v.is_disposable},"${v.provider}",${v.confidence_score},${v.health_score || v.confidence_score},"${v.created_at}"`
@@ -22,8 +24,9 @@ export function exportCSV(req: Request, res: Response): void {
 
 export function exportJSON(req: Request, res: Response): void {
   try {
+    const authReq = req as AuthRequest
     const db = getDb()
-    const items = db.prepare('SELECT * FROM validations ORDER BY created_at DESC LIMIT 10000').all() as any[]
+    const items = db.prepare('SELECT * FROM validations WHERE user_id = ? ORDER BY created_at DESC LIMIT 10000').all(authReq.userId) as any[]
     const data = items.map((v: any) => ({
       email: v.email,
       syntaxValid: !!v.syntax_valid,
@@ -45,8 +48,9 @@ export function exportJSON(req: Request, res: Response): void {
 
 export function exportExcel(req: Request, res: Response): void {
   try {
+    const authReq = req as AuthRequest
     const db = getDb()
-    const items = db.prepare('SELECT * FROM validations ORDER BY created_at DESC LIMIT 10000').all() as any[]
+    const items = db.prepare('SELECT * FROM validations WHERE user_id = ? ORDER BY created_at DESC LIMIT 10000').all(authReq.userId) as any[]
 
     const data = items.map((v: any) => ({
       Email: v.email,
@@ -79,13 +83,15 @@ export function exportExcel(req: Request, res: Response): void {
 
 export function exportPDF(req: Request, res: Response): void {
   try {
+    const authReq = req as AuthRequest
     const db = getDb()
-    const total = (db.prepare('SELECT COUNT(*) as count FROM validations').get() as any).count
-    const valid = (db.prepare("SELECT COUNT(*) as count FROM validations WHERE syntax_valid = 1 AND is_disposable = 0").get() as any).count
-    const invalid = (db.prepare('SELECT COUNT(*) as count FROM validations WHERE syntax_valid = 0').get() as any).count
-    const disposable = (db.prepare('SELECT COUNT(*) as count FROM validations WHERE is_disposable = 1').get() as any).count
-    const avgScore = (db.prepare('SELECT AVG(confidence_score) as avg FROM validations').get() as any).avg || 0
-    const items = db.prepare('SELECT * FROM validations ORDER BY created_at DESC LIMIT 50').all() as any[]
+    
+    const total = (db.prepare('SELECT COUNT(*) as count FROM validations WHERE user_id = ?').get(authReq.userId) as any).count
+    const valid = (db.prepare("SELECT COUNT(*) as count FROM validations WHERE user_id = ? AND syntax_valid = 1 AND is_disposable = 0").get(authReq.userId) as any).count
+    const invalid = (db.prepare('SELECT COUNT(*) as count FROM validations WHERE user_id = ? AND syntax_valid = 0').get(authReq.userId) as any).count
+    const disposable = (db.prepare('SELECT COUNT(*) as count FROM validations WHERE user_id = ? AND is_disposable = 1').get(authReq.userId) as any).count
+    const avgScore = (db.prepare('SELECT AVG(confidence_score) as avg FROM validations WHERE user_id = ?').get(authReq.userId) as any).avg || 0
+    const items = db.prepare('SELECT * FROM validations WHERE user_id = ? ORDER BY created_at DESC LIMIT 50').all(authReq.userId) as any[]
 
     const doc = new PDFDocument({ margin: 40, size: 'A4' })
     res.setHeader('Content-Type', 'application/pdf')
@@ -155,15 +161,17 @@ export function exportPDF(req: Request, res: Response): void {
 
 export function getReportSummary(req: Request, res: Response): void {
   try {
+    const authReq = req as AuthRequest
     const db = getDb()
-    const total = (db.prepare('SELECT COUNT(*) as count FROM validations').get() as any).count
-    const valid = (db.prepare("SELECT COUNT(*) as count FROM validations WHERE syntax_valid = 1 AND is_disposable = 0").get() as any).count
-    const invalid = (db.prepare('SELECT COUNT(*) as count FROM validations WHERE syntax_valid = 0').get() as any).count
-    const disposable = (db.prepare('SELECT COUNT(*) as count FROM validations WHERE is_disposable = 1').get() as any).count
+    
+    const total = (db.prepare('SELECT COUNT(*) as count FROM validations WHERE user_id = ?').get(authReq.userId) as any).count
+    const valid = (db.prepare("SELECT COUNT(*) as count FROM validations WHERE user_id = ? AND syntax_valid = 1 AND is_disposable = 0").get(authReq.userId) as any).count
+    const invalid = (db.prepare('SELECT COUNT(*) as count FROM validations WHERE user_id = ? AND syntax_valid = 0').get(authReq.userId) as any).count
+    const disposable = (db.prepare('SELECT COUNT(*) as count FROM validations WHERE user_id = ? AND is_disposable = 1').get(authReq.userId) as any).count
     const duplicates = (db.prepare(`
-      SELECT COUNT(*) - COUNT(DISTINCT email) as count FROM validations
-    `).get() as any).count
-    const avgScore = (db.prepare('SELECT AVG(confidence_score) as avg FROM validations').get() as any).avg || 0
+      SELECT COUNT(*) - COUNT(DISTINCT email) as count FROM validations WHERE user_id = ?
+    `).get(authReq.userId) as any).count
+    const avgScore = (db.prepare('SELECT AVG(confidence_score) as avg FROM validations WHERE user_id = ?').get(authReq.userId) as any).avg || 0
 
     res.json({
       success: true,

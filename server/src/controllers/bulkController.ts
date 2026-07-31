@@ -6,6 +6,7 @@ import { AuthRequest } from '../middleware/auth'
 
 export async function uploadBulk(req: Request, res: Response): Promise<void> {
   try {
+    const authReq = req as AuthRequest
     const file = req.file
     if (!file) {
       res.status(400).json({ success: false, error: 'No file uploaded' })
@@ -24,13 +25,12 @@ export async function uploadBulk(req: Request, res: Response): Promise<void> {
     }
 
     const jobId = uuidv4()
-    const authReq = req as AuthRequest
     const db = getDb()
 
     db.prepare(`
       INSERT INTO bulk_jobs (id, user_id, filename, total_emails, status)
       VALUES (?, ?, ?, ?, 'processing')
-    `).run(jobId, authReq.userId || null, file.originalname, emails.length)
+    `).run(jobId, authReq.userId, file.originalname, emails.length)
 
     const results = await validateBulk(emails)
     let validCount = 0
@@ -115,10 +115,11 @@ export async function uploadBulk(req: Request, res: Response): Promise<void> {
 
 export function getBulkJobs(req: Request, res: Response): void {
   try {
+    const authReq = req as AuthRequest
     const db = getDb()
     const jobs = db.prepare(`
-      SELECT * FROM bulk_jobs ORDER BY created_at DESC LIMIT 50
-    `).all() as any[]
+      SELECT * FROM bulk_jobs WHERE user_id = ? ORDER BY created_at DESC LIMIT 50
+    `).all(authReq.userId) as any[]
 
     res.json({
       success: true,
@@ -142,8 +143,17 @@ export function getBulkJobs(req: Request, res: Response): void {
 
 export function getBulkResults(req: Request, res: Response): void {
   try {
+    const authReq = req as AuthRequest
     const { jobId } = req.params
     const db = getDb()
+
+    // Owner check for security: verify this bulk job belongs to the current user
+    const job = db.prepare('SELECT id FROM bulk_jobs WHERE id = ? AND user_id = ?').get(jobId, authReq.userId) as any
+    if (!job) {
+      res.status(404).json({ success: false, error: 'Bulk job not found' })
+      return
+    }
+
     const results = db.prepare('SELECT * FROM bulk_results WHERE job_id = ?').all(jobId) as any[]
 
     res.json({
